@@ -43,12 +43,14 @@ class CodeGenerator(object):
         self.output_file = None
         self.part = self.input_path.split(".")[-2]
         self.parser = None
+        self.obj_refs = None
 
     def run(self):
         sys.stderr.write("Generating Python code {0} for XML file {1}".format(self.output_path, self.input_path) + "\n")
         self.output_file = open(self.output_path, "w")
         self.make_header()
         self.parser = xmlparser.XMLParser(self.input_path)
+        self.obj_refs = []
         for node in self.parser.get_node_datas():
             if node.nodetype == 'UAObject':
                 self.make_object_code(node)
@@ -66,6 +68,7 @@ class CodeGenerator(object):
                 self.make_method_code(node)
             else:
                 sys.stderr.write("Not implemented node type: " + node.nodetype + "\n")
+        self.make_refs_code()
         self.output_file.close()
 
     def writecode(self, *args):
@@ -121,7 +124,7 @@ def create_standard_address_space_{0!s}(server):
         self.writecode(indent, 'attrs.EventNotifier = {0}'.format(obj.eventnotifier))
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def make_object_type_code(self, obj):
         indent = "   "
@@ -134,7 +137,7 @@ def create_standard_address_space_{0!s}(server):
         self.writecode(indent, 'attrs.IsAbstract = {0}'.format(obj.abstract))
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def make_common_variable_code(self, indent, obj):
         if obj.desc:
@@ -193,7 +196,7 @@ def create_standard_address_space_{0!s}(server):
         self.make_common_variable_code(indent, obj)
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def make_variable_type_code(self, obj):
         indent = "   "
@@ -208,7 +211,7 @@ def create_standard_address_space_{0!s}(server):
         self.make_common_variable_code(indent, obj)
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def to_value(self, val):
         # if type(val) in (str, unicode):
@@ -227,7 +230,7 @@ def create_standard_address_space_{0!s}(server):
         self.writecode(indent, 'attrs.DisplayName = ua.LocalizedText("{0}")'.format(obj.displayname))
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def make_reference_code(self, obj):
         indent = "   "
@@ -245,7 +248,7 @@ def create_standard_address_space_{0!s}(server):
             self.writecode(indent, 'attrs.Symmetric = {0}'.format(obj.symmetric))
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
     def make_datatype_code(self, obj):
         indent = "   "
@@ -259,21 +262,26 @@ def create_standard_address_space_{0!s}(server):
             self.writecode(indent, 'attrs.IsAbstract = {0}'.format(obj.abstract))
         self.writecode(indent, 'node.NodeAttributes = attrs')
         self.writecode(indent, 'server.add_nodes([node])')
-        self.make_refs_code(obj, indent)
+        self.add_refs(obj)
 
-    def make_refs_code(self, obj, indent):
+    def add_refs(self, obj):
         if not obj.refs:
             return
-        self.writecode(indent, "refs = []")
-        for ref in obj.refs:
-            self.writecode(indent, 'ref = ua.AddReferencesItem()')
-            self.writecode(indent, 'ref.IsForward = True')
-            self.writecode(indent, 'ref.ReferenceTypeId = {0}'.format(self.to_ref_type(ref.reftype)))
-            self.writecode(indent, 'ref.SourceNodeId = ua.NodeId.from_string("{0}")'.format(obj.nodeid))
-            self.writecode(indent, 'ref.TargetNodeClass = ua.NodeClass.DataType')
-            self.writecode(indent, 'ref.TargetNodeId = ua.NodeId.from_string("{0}")'.format(ref.target))
-            self.writecode(indent, "refs.append(ref)")
-        self.writecode(indent, 'server.add_references(refs)')
+        self.obj_refs.append(obj)
+
+    def make_refs_code(self):
+        indent = "   "
+        for obj in self.obj_refs:
+            self.writecode(indent, "refs = []")
+            for ref in obj.refs:
+                self.writecode(indent, 'ref = ua.AddReferencesItem()')
+                self.writecode(indent, 'ref.IsForward = True')
+                self.writecode(indent, 'ref.ReferenceTypeId = {0}'.format(self.to_ref_type(ref.reftype)))
+                self.writecode(indent, 'ref.SourceNodeId = ua.NodeId.from_string("{0}")'.format(obj.nodeid))
+                self.writecode(indent, 'ref.TargetNodeClass = ua.NodeClass.DataType')
+                self.writecode(indent, 'ref.TargetNodeId = ua.NodeId.from_string("{0}")'.format(ref.target))
+                self.writecode(indent, "refs.append(ref)")
+            self.writecode(indent, 'server.add_references(refs)')
 
 
 def save_aspace_to_disk():
