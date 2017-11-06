@@ -16,6 +16,8 @@ from opcua import ua
 from opcua import uamethod
 from opcua.common.event_objects import BaseEvent, AuditEvent, AuditChannelEvent, AuditSecurityEvent, AuditOpenSecureChannelEvent
 from opcua.common import ua_utils
+from opcua.server.address_space import AddressSpace, NodeManagementService
+from opcua.server.standard_address_space import standard_address_space
 
 
 port_num = 48540
@@ -579,4 +581,28 @@ class TestServerStartError(unittest.TestCase):
         
         server1.stop()
         server2.stop()
+
+class CheckingNodeManagementService(object):
+    def __init__(self):
+        self.server = NodeManagementService(AddressSpace())
+        self.failed_nodes = []
+        self.failed_references = []
+
+    def add_nodes(self, addnodeitems):
+        for i,r in zip(addnodeitems, self.server.add_nodes(addnodeitems)):
+            if not r.StatusCode.is_good():
+                self.failed_nodes.append((i, r))
+
+    def add_references(self, refs):
+        for i,r in zip(refs, self.server.add_references(refs)):
+            if not r.is_good():
+                self.failed_references.append((i, r))
+
+class TestStandardAddressSpace(unittest.TestCase):
+    maxDiff = None
+    def runTest(self):
+        server = CheckingNodeManagementService()
+        standard_address_space.fill_address_space(server)
+        self.assertEqual(server.failed_nodes, [])
+        self.assertEqual(server.failed_references, [])
 
