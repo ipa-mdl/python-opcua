@@ -15,8 +15,8 @@ from opcua.server.standard_address_space.standard_address_space_part13 import cr
 
 def fill_address_space(nodeservice):
     create_standard_address_space_Part3(nodeservice)
-    create_standard_address_space_Part4(nodeservice)
     create_standard_address_space_Part5(nodeservice)
+    create_standard_address_space_Part4(nodeservice) # depends on nodes from part 5 (i=78)
     create_standard_address_space_Part8(nodeservice)
     create_standard_address_space_Part9(nodeservice)
     create_standard_address_space_Part10(nodeservice)
