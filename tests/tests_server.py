@@ -587,10 +587,11 @@ class CheckingNodeManagementService(object):
         self.server = NodeManagementService(AddressSpace())
         self.failed_nodes = []
         self.failed_references = []
+        self.blacklist_nodes = set([ua.NodeId.from_string('i=78')])
 
     def add_nodes(self, addnodeitems):
         for i,r in zip(addnodeitems, self.server.add_nodes(addnodeitems)):
-            if not r.StatusCode.is_good():
+            if not r.StatusCode.is_good() and i.RequestedNewNodeId not in self.blacklist_nodes:
                 self.failed_nodes.append((i, r))
 
     def add_references(self, refs):
