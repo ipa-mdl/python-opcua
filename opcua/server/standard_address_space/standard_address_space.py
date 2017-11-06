@@ -2,6 +2,7 @@
 import os.path
 
 import opcua
+from opcua import ua
 
 from opcua.server.standard_address_space.standard_address_space_part3 import create_standard_address_space_Part3
 from opcua.server.standard_address_space.standard_address_space_part4 import create_standard_address_space_Part4
@@ -14,9 +15,21 @@ from opcua.server.standard_address_space.standard_address_space_part13 import cr
 
 
 def fill_address_space(nodeservice):
+    node = ua.AddNodesItem()
+    node.RequestedNewNodeId = ua.NodeId.from_string("i=78")
+    node.BrowseName = ua.QualifiedName.from_string("Mandatory")
+    node.NodeClass = ua.NodeClass.Object
+    node.TypeDefinition = ua.NodeId.from_string("i=77")
+    attrs = ua.ObjectAttributes()
+    attrs.Description = ua.LocalizedText("Specifies that an instance with the attributes and references of the instance declaration must appear when a type is instantiated.")
+    attrs.DisplayName = ua.LocalizedText("Mandatory")
+    attrs.EventNotifier = 0
+    node.NodeAttributes = attrs
+    nodeservice.add_nodes([node])
+
     create_standard_address_space_Part3(nodeservice)
+    create_standard_address_space_Part4(nodeservice)
     create_standard_address_space_Part5(nodeservice)
-    create_standard_address_space_Part4(nodeservice) # depends on nodes from part 5 (i=78)
     create_standard_address_space_Part8(nodeservice)
     create_standard_address_space_Part9(nodeservice)
     create_standard_address_space_Part10(nodeservice)
