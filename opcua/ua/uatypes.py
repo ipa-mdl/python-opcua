@@ -946,6 +946,16 @@ extension_object_classes = {}
 extension_object_ids = {}
 
 
+def register_class_type_for_decoding(name, class_type):
+    """
+    Make object class available in ua module
+    """
+    # FIXME: Next line is not exactly a Python best practices, so feel free to propose something else
+    # add new extensions objects to ua modules to automate decoding
+    import opcua.ua
+    setattr(opcua.ua, name, class_type)
+
+
 def register_extension_object(name, nodeid, class_type):
     """
     Register a new extension object for automatic decoding and make them available in ua module
@@ -953,10 +963,7 @@ def register_extension_object(name, nodeid, class_type):
     logger.warning("registring new extension object: %s %s %s", name, nodeid, class_type)
     extension_object_classes[nodeid] = class_type
     extension_object_ids[name] = nodeid
-    # FIXME: Next line is not exactly a Python best practices, so feel free to propose something else
-    # add new extensions objects to ua modules to automate decoding
-    import opcua.ua
-    setattr(opcua.ua, name, class_type)
+    register_class_type_for_decoding(name, class_type)
 
 
 def get_extensionobject_class_type(typeid):
